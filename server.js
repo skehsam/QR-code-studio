@@ -15,14 +15,14 @@ const qrStore = {};
 // ─── Create QR code ───────────────────────────────────────────────────────────
 app.post('/api/qr/create', async (req, res) => {
   const {
-    type,        // 'single' | 'multilink' | 'onetime'
-    url,         // single URL
-    links,       // [{ url, label }] for multilink
-    expiresIn,   // minutes until expiry (0 = never)
+    type, // 'single' | 'multilink' | 'onetime'
+    url, // single URL
+    links, // [{ url, label }] for multilink
+    expiresIn, // minutes until expiry (0 = never)
     label,
     fgColor,
     bgColor,
-    errorLevel
+    errorLevel,
   } = req.body;
 
   if (!type) return res.status(400).json({ error: 'type is required' });
@@ -30,9 +30,10 @@ app.post('/api/qr/create', async (req, res) => {
   const id = uuidv4();
   const redirectUrl = `${req.protocol}://${req.get('host')}/r/${id}`;
 
-  const expiresAt = expiresIn && expiresIn > 0
-    ? new Date(Date.now() + expiresIn * 60 * 1000).toISOString()
-    : null;
+  const expiresAt =
+    expiresIn && expiresIn > 0
+      ? new Date(Date.now() + expiresIn * 60 * 1000).toISOString()
+      : null;
 
   qrStore[id] = {
     id,
@@ -45,7 +46,7 @@ app.post('/api/qr/create', async (req, res) => {
     bgColor: bgColor || '#ffffff',
     scanned: 0,
     used: false,
-    createdAt: new Date().toISOString()
+    createdAt: new Date().toISOString(),
   };
 
   try {
@@ -53,7 +54,7 @@ app.post('/api/qr/create', async (req, res) => {
       color: { dark: fgColor || '#000000', light: bgColor || '#ffffff' },
       errorCorrectionLevel: errorLevel || 'H',
       width: 300,
-      margin: 2
+      margin: 2,
     });
 
     res.json({ id, redirectUrl, qrDataUrl, record: qrStore[id] });
@@ -64,9 +65,11 @@ app.post('/api/qr/create', async (req, res) => {
 
 // ─── List all QR codes ────────────────────────────────────────────────────────
 app.get('/api/qr/list', (req, res) => {
-  res.json(Object.values(qrStore).sort((a, b) =>
-    new Date(b.createdAt) - new Date(a.createdAt)
-  ));
+  res.json(
+    Object.values(qrStore).sort(
+      (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+    ),
+  );
 });
 
 // ─── Get single QR code ───────────────────────────────────────────────────────
@@ -78,7 +81,8 @@ app.get('/api/qr/:id', (req, res) => {
 
 // ─── Delete QR code ───────────────────────────────────────────────────────────
 app.delete('/api/qr/:id', (req, res) => {
-  if (!qrStore[req.params.id]) return res.status(404).json({ error: 'Not found' });
+  if (!qrStore[req.params.id])
+    return res.status(404).json({ error: 'Not found' });
   delete qrStore[req.params.id];
   res.json({ success: true });
 });
@@ -130,11 +134,15 @@ function errorPage(msg) {
 }
 
 function multilinkPage(record) {
-  const items = record.links.map(l => `
+  const items = record.links
+    .map(
+      (l) => `
     <a href="${l.url}" class="link-item">
       <span class="link-label">${l.label || l.url}</span>
       <span class="arrow">→</span>
-    </a>`).join('');
+    </a>`,
+    )
+    .join('');
 
   return `<!DOCTYPE html><html><head><meta charset="UTF-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -157,4 +165,6 @@ function multilinkPage(record) {
 }
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`QR app running at http://localhost:${PORT}`));
+app.listen(PORT, () =>
+  console.log(`QR app running at http://localhost:${PORT}`),
+);
