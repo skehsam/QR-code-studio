@@ -1,0 +1,328 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>QR Code Studio</title>
+  </head>
+  <body>
+    <header>
+      <h1>🔳 QR Code Studio</h1>
+      <nav>
+        <button class="active" onclick="showPage('create', this)">
+          Create
+        </button>
+        <button onclick="showPage('manage', this)">My QR Codes</button>
+      </nav>
+    </header>
+
+    <main>
+      <!-- ═══════════════════════════ CREATE PAGE ═══════════════════════════ -->
+      <div id="page-create" class="page active">
+        <div
+          style="
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 1rem;
+            align-items: start;
+          "
+        >
+          <!-- Left: Form -->
+          <div>
+            <!-- Type selector -->
+            <div class="card">
+              <h2>QR Type</h2>
+              <div class="type-grid">
+                <div
+                  class="type-btn selected"
+                  onclick="selectType('single', this)"
+                >
+                  <div class="type-icon">🔗</div>
+                  <span class="type-name">Single URL</span>
+                  <span class="type-desc">One link, unlimited scans</span>
+                </div>
+                <div class="type-btn" onclick="selectType('onetime', this)">
+                  <div class="type-icon">🔐</div>
+                  <span class="type-name">One-Time</span>
+                  <span class="type-desc">Expires after first scan</span>
+                </div>
+                <div class="type-btn" onclick="selectType('multilink', this)">
+                  <div class="type-icon">🔀</div>
+                  <span class="type-name">Multi-Link</span>
+                  <span class="type-desc">Show a menu of links</span>
+                </div>
+              </div>
+
+              <!-- Single / One-time URL -->
+              <div id="field-single">
+                <div class="field">
+                  <label>Destination URL</label>
+                  <input
+                    type="url"
+                    id="single-url"
+                    placeholder="https://example.com"
+                  />
+                </div>
+              </div>
+
+              <!-- Multilink -->
+              <div id="field-multilink" style="display: none">
+                <label style="margin-bottom: 8px">Links</label>
+                <div id="link-rows"></div>
+                <button class="btn btn-sm" onclick="addLinkRow()">
+                  + Add link
+                </button>
+              </div>
+            </div>
+
+            <!-- Settings -->
+            <div class="card">
+              <h2>Settings</h2>
+              <div class="grid-2">
+                <div class="field">
+                  <label>Label (optional)</label>
+                  <input
+                    type="text"
+                    id="label"
+                    placeholder="e.g. Product Page"
+                    oninput="updatePreviewLabel()"
+                  />
+                </div>
+                <div class="field">
+                  <label>Expires in (minutes, 0 = never)</label>
+                  <input type="number" id="expires" value="0" min="0" />
+                </div>
+              </div>
+            </div>
+
+            <!-- Design -->
+            <div class="card">
+              <h2>Design</h2>
+              <div class="grid-3">
+                <div class="field">
+                  <label>Foreground color</label>
+                  <div class="color-row">
+                    <input
+                      type="color"
+                      id="fg-color"
+                      value="#000000"
+                      oninput="
+                        document.getElementById('fg-hex').textContent =
+                          this.value.toUpperCase()
+                      "
+                    />
+                    <span id="fg-hex" class="hex">#000000</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Background color</label>
+                  <div class="color-row">
+                    <input
+                      type="color"
+                      id="bg-color"
+                      value="#ffffff"
+                      oninput="
+                        document.getElementById('bg-hex').textContent =
+                          this.value.toUpperCase()
+                      "
+                    />
+                    <span id="bg-hex" class="hex">#FFFFFF</span>
+                  </div>
+                </div>
+                <div class="field">
+                  <label>Error correction</label>
+                  <select id="error-level">
+                    <option value="L">Low (L)</option>
+                    <option value="M">Medium (M)</option>
+                    <option value="Q">Quartile (Q)</option>
+                    <option value="H" selected>High (H)</option>
+                  </select>
+                </div>
+              </div>
+
+              <hr class="divider" />
+              <h2>Label Text Style</h2>
+              <div class="grid-3">
+                <div class="field">
+                  <label>Font family</label>
+                  <select id="text-font" onchange="updatePreviewLabel()">
+                    <option value="system-ui, sans-serif">
+                      System default
+                    </option>
+                    <option value="Georgia, serif">Georgia (serif)</option>
+                    <option value="'Courier New', monospace">
+                      Courier (mono)
+                    </option>
+                    <option value="Impact, sans-serif">Impact</option>
+                    <option value="Arial, sans-serif">Arial</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Font size (px)</label>
+                  <input
+                    type="number"
+                    id="text-size"
+                    value="14"
+                    min="8"
+                    max="48"
+                    oninput="updatePreviewLabel()"
+                  />
+                </div>
+                <div class="field">
+                  <label>Text color</label>
+                  <div class="color-row">
+                    <input
+                      type="color"
+                      id="text-color"
+                      value="#1a1a18"
+                      oninput="updatePreviewLabel()"
+                    />
+                  </div>
+                </div>
+              </div>
+              <div class="grid-2">
+                <div class="field">
+                  <label>Font weight</label>
+                  <select id="text-weight" onchange="updatePreviewLabel()">
+                    <option value="400">Regular</option>
+                    <option value="500">Medium</option>
+                    <option value="700">Bold</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Text align</label>
+                  <select id="text-align" onchange="updatePreviewLabel()">
+                    <option value="center">Center</option>
+                    <option value="left">Left</option>
+                    <option value="right">Right</option>
+                  </select>
+                </div>
+              </div>
+              <div class="preview-text" id="label-preview">
+                <span
+                  id="label-preview-text"
+                  style="color: #888780; font-size: 13px"
+                  >Label preview will appear here</span
+                >
+              </div>
+            </div>
+
+            <button
+              class="btn btn-primary"
+              style="
+                width: 100%;
+                justify-content: center;
+                height: 44px;
+                font-size: 15px;
+              "
+              onclick="createQR()"
+            >
+              Generate QR Code
+            </button>
+          </div>
+
+          <!-- Right: Preview -->
+          <div>
+            <div class="card" style="position: sticky; top: 1rem">
+              <h2>Preview</h2>
+              <div
+                id="qr-placeholder"
+                style="
+                  text-align: center;
+                  padding: 2rem 0;
+                  color: #888780;
+                  font-size: 13px;
+                "
+              >
+                Your QR code will appear here
+              </div>
+              <div id="qr-output" class="qr-output" style="display: none">
+                <div class="qr-box" id="qr-img-wrap"></div>
+                <div
+                  id="label-output"
+                  style="
+                    display: none;
+                    padding: 0.5rem 1rem;
+                    border-radius: 8px;
+                    border: 1px solid #e0dfd8;
+                    width: 100%;
+                    text-align: center;
+                  "
+                ></div>
+                <p class="qr-label-text" id="qr-url-text"></p>
+                <div
+                  style="
+                    display: flex;
+                    gap: 8px;
+                    flex-wrap: wrap;
+                    justify-content: center;
+                  "
+                >
+                  <button class="btn btn-sm" onclick="downloadQR('png')">
+                    ⬇ PNG
+                  </button>
+                  <button class="btn btn-sm" onclick="downloadQR('svg')">
+                    ⬇ SVG
+                  </button>
+                  <button class="btn btn-sm" onclick="copyLink()">
+                    🔗 Copy link
+                  </button>
+                </div>
+                <p style="font-size: 11px; color: #888780; text-align: center">
+                  Scans: <span id="scan-count">0</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════ MANAGE PAGE ═══════════════════════════ -->
+      <div id="page-manage" class="page">
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 1rem;
+            "
+          >
+            <h2 style="margin: 0">My QR Codes</h2>
+            <button class="btn btn-sm" onclick="loadList()">↻ Refresh</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Label</th>
+                  <th>Type</th>
+                  <th>Status</th>
+                  <th>Scans</th>
+                  <th>Expires</th>
+                  <th>Created</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="qr-table-body">
+                <tr>
+                  <td
+                    colspan="7"
+                    style="color: #888780; text-align: center; padding: 2rem"
+                  >
+                    No QR codes yet
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <div id="toast"></div>
+
+    <script src="main.js"></script>
+  </body>
+</html>
