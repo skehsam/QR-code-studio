@@ -9,12 +9,60 @@
   <body>
     <header>
       <h1>🔳 QR Code Studio</h1>
-      <nav>
+
+      <!-- Desktop nav (hidden on mobile) -->
+      <nav class="nav-desktop">
         <button class="active" onclick="showPage('create', this)">
           Create
         </button>
         <button onclick="showPage('manage', this)">My QR Codes</button>
       </nav>
+
+      <!-- Mobile dropdown nav -->
+      <div class="nav-mobile">
+        <button
+          class="nav-dropdown-trigger"
+          id="nav-trigger"
+          onclick="toggleNavDropdown()"
+          aria-haspopup="true"
+          aria-expanded="false"
+        >
+          <span id="nav-label">Create</span>
+          <svg
+            class="nav-chevron"
+            id="nav-chevron"
+            width="14"
+            height="14"
+            viewBox="0 0 14 14"
+            fill="none"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path
+              d="M2.5 5L7 9.5L11.5 5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
+        </button>
+        <div class="nav-dropdown" id="nav-dropdown" role="menu">
+          <button
+            class="nav-dropdown-item active"
+            data-page="create"
+            onclick="selectNavItem('create', 'Create', this)"
+          >
+            <span>🎨</span> Create
+          </button>
+          <button
+            class="nav-dropdown-item"
+            data-page="manage"
+            onclick="selectNavItem('manage', 'My QR Codes', this)"
+          >
+            <span>📋</span> My QR Codes
+          </button>
+        </div>
+      </div>
     </header>
 
     <main>

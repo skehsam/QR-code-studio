@@ -3,6 +3,45 @@ let currentType = 'single';
 let currentId = null;
 let currentRedirectUrl = null;
 
+// ── Mobile nav dropdown ──────────────────────────────────────────────────────
+function toggleNavDropdown() {
+  const dropdown = document.getElementById('nav-dropdown');
+  const chevron = document.getElementById('nav-chevron');
+  const trigger = document.getElementById('nav-trigger');
+  const isOpen = dropdown.classList.contains('open');
+  dropdown.classList.toggle('open', !isOpen);
+  chevron.classList.toggle('open', !isOpen);
+  trigger.setAttribute('aria-expanded', String(!isOpen));
+}
+
+function selectNavItem(page, labelText, el) {
+  // Update dropdown label
+  document.getElementById('nav-label').textContent = labelText;
+  // Update active state in dropdown
+  document
+    .querySelectorAll('.nav-dropdown-item')
+    .forEach((b) => b.classList.remove('active'));
+  el.classList.add('active');
+  // Close dropdown
+  document.getElementById('nav-dropdown').classList.remove('open');
+  document.getElementById('nav-chevron').classList.remove('open');
+  document.getElementById('nav-trigger').setAttribute('aria-expanded', 'false');
+  // Navigate
+  showPage(page, el);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', (e) => {
+  const nav = document.querySelector('.nav-mobile');
+  if (nav && !nav.contains(e.target)) {
+    document.getElementById('nav-dropdown')?.classList.remove('open');
+    document.getElementById('nav-chevron')?.classList.remove('open');
+    document
+      .getElementById('nav-trigger')
+      ?.setAttribute('aria-expanded', 'false');
+  }
+});
+
 // ── Navigation ──────────────────────────────────────────────────────────────
 function showPage(name, btn) {
   document
