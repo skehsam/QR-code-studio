@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
+app.set('trust proxy', 1); // trust X-Forwarded-* headers so req.protocol reflects the real scheme behind a proxy/load balancer
 app.use(express.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
