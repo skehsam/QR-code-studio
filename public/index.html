@@ -17,6 +17,7 @@
           Create
         </button>
         <button onclick="showPage('manage', this)">My QR Codes</button>
+        <button onclick="showPage('scan', this)">Scan</button>
       </nav>
 
       <!-- Mobile dropdown nav -->
@@ -61,6 +62,13 @@
             onclick="selectNavItem('manage', 'My QR Codes', this)"
           >
             <span>📋</span> My QR Codes
+          </button>
+          <button
+            class="nav-dropdown-item"
+            data-page="scan"
+            onclick="selectNavItem('scan', 'Scan', this)"
+          >
+            <span>📷</span> Scan
           </button>
         </div>
       </div>
@@ -368,10 +376,272 @@
           </div>
         </div>
       </div>
+      <!-- ═══════════════════════════ SCAN PAGE ════════════════════════════ -->
+      <div id="page-scan" class="page">
+        <div class="card">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 1rem;
+              flex-wrap: wrap;
+              gap: 8px;
+            "
+          >
+            <h2 style="margin: 0">QR Code Scanner</h2>
+            <span id="scan-status-pill" class="scan-status-pill scan-idle"
+              ><span class="scan-dot"></span>Idle</span
+            >
+          </div>
+
+          <!-- Tabs -->
+          <div class="scan-tab-row">
+            <button
+              class="scan-tab-btn active"
+              onclick="scanSwitchTab('camera', this)"
+            >
+              📷 Camera
+            </button>
+            <button
+              class="scan-tab-btn"
+              onclick="scanSwitchTab('upload', this)"
+            >
+              🖼️ Upload image
+            </button>
+          </div>
+
+          <!-- Camera tab -->
+          <div id="scan-tab-camera" class="scan-tab-panel active">
+            <div id="scan-cam-placeholder" class="scan-cam-placeholder">
+              <div style="font-size: 48px; opacity: 0.4">📷</div>
+              <p style="font-size: 14px; color: #6b6b67">Camera is off</p>
+              <p style="font-size: 12px; color: #888780">
+                Click Start to enable your camera
+              </p>
+            </div>
+            <div
+              id="scan-video-wrap"
+              style="
+                display: none;
+                position: relative;
+                width: 100%;
+                max-width: 480px;
+                margin: 0 auto;
+                border-radius: 14px;
+                overflow: hidden;
+                background: #111;
+                aspect-ratio: 1/1;
+              "
+            >
+              <video
+                id="scan-video-el"
+                playsinline
+                muted
+                autoplay
+                style="
+                  width: 100%;
+                  height: 100%;
+                  object-fit: cover;
+                  display: block;
+                "
+              ></video>
+              <canvas id="scan-canvas" style="display: none"></canvas>
+              <div
+                style="
+                  position: absolute;
+                  inset: 0;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  pointer-events: none;
+                "
+              >
+                <div class="scan-frame">
+                  <span></span>
+                  <div class="scan-line"></div>
+                </div>
+              </div>
+            </div>
+            <div class="scan-cam-controls">
+              <button
+                class="btn btn-primary"
+                id="scan-btn-start"
+                onclick="scanStartCamera()"
+              >
+                ▶ Start camera
+              </button>
+              <button
+                class="btn"
+                id="scan-btn-stop"
+                style="display: none"
+                onclick="scanStopCamera()"
+              >
+                ⏹ Stop
+              </button>
+              <button
+                class="btn"
+                id="scan-btn-flip"
+                style="display: none"
+                onclick="scanFlipCamera()"
+              >
+                🔄 Flip
+              </button>
+              <button
+                class="btn"
+                id="scan-btn-torch"
+                style="display: none"
+                onclick="scanToggleTorch()"
+              >
+                🔦 Torch
+              </button>
+            </div>
+          </div>
+
+          <!-- Upload tab -->
+          <div id="scan-tab-upload" class="scan-tab-panel">
+            <div
+              class="scan-drop-zone"
+              id="scan-drop-zone"
+              onclick="document.getElementById('scan-file-input').click()"
+            >
+              <div style="font-size: 40px; margin-bottom: 0.75rem">📁</div>
+              <p style="font-size: 14px; color: #6b6b67; margin-bottom: 4px">
+                <strong style="color: #1a1a18">Click to browse</strong> or drag
+                and drop
+              </p>
+              <span style="font-size: 12px; color: #888780"
+                >PNG, JPG, GIF, WebP, BMP</span
+              >
+            </div>
+            <input
+              type="file"
+              id="scan-file-input"
+              accept="image/*"
+              style="display: none"
+              onchange="scanHandleFile(this.files[0])"
+            />
+            <div
+              id="scan-upload-preview-wrap"
+              style="display: none; margin-top: 1rem; text-align: center"
+            >
+              <img
+                id="scan-upload-preview"
+                alt="Uploaded image"
+                style="
+                  max-width: 280px;
+                  max-height: 280px;
+                  border-radius: 12px;
+                  border: 1px solid #e0dfd8;
+                "
+              />
+            </div>
+            <div style="text-align: center; margin-top: 1rem">
+              <button
+                class="btn btn-primary"
+                id="scan-btn-decode"
+                onclick="scanDecodeUpload()"
+                style="display: none"
+              >
+                🔍 Scan image
+              </button>
+            </div>
+          </div>
+
+          <!-- Result -->
+          <div id="scan-result-area" style="display: none">
+            <hr class="divider" />
+            <div
+              style="
+                background: #f5f5f3;
+                border: 1px solid #e0dfd8;
+                border-radius: 12px;
+                padding: 1rem 1.25rem;
+              "
+            >
+              <div
+                style="
+                  font-size: 11px;
+                  color: #888780;
+                  font-weight: 500;
+                  text-transform: uppercase;
+                  letter-spacing: 0.05em;
+                  margin-bottom: 6px;
+                "
+              >
+                Scanned result
+              </div>
+              <div
+                id="scan-result-value"
+                style="
+                  font-size: 15px;
+                  color: #1a1a18;
+                  word-break: break-all;
+                  line-height: 1.5;
+                "
+              ></div>
+            </div>
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                margin-top: 0.75rem;
+                flex-wrap: wrap;
+              "
+            >
+              <button class="btn btn-sm" onclick="scanCopyResult()">
+                📋 Copy
+              </button>
+              <button
+                class="btn btn-sm"
+                id="scan-btn-open"
+                style="display: none"
+                onclick="scanOpenResult()"
+              >
+                🔗 Open link
+              </button>
+              <button class="btn btn-sm btn-danger" onclick="scanClearResult()">
+                ✕ Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- History -->
+        <div id="scan-history-area" class="card" style="display: none">
+          <div
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              margin-bottom: 0.75rem;
+            "
+          >
+            <h2
+              style="
+                margin: 0;
+                font-size: 13px;
+                font-weight: 500;
+                color: #6b6b67;
+              "
+            >
+              Scan history
+            </h2>
+            <button class="btn btn-sm btn-danger" onclick="scanClearHistory()">
+              Clear all
+            </button>
+          </div>
+          <div
+            id="scan-history-list"
+            style="display: flex; flex-direction: column; gap: 6px"
+          ></div>
+        </div>
+      </div>
     </main>
 
     <div id="toast"></div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js"></script>
     <script src="main.js"></script>
   </body>
 </html>

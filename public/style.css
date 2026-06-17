@@ -499,3 +499,230 @@ tr:last-child td {
     grid-column: 1 / -1;
   }
 }
+
+/* ── Scanner page ── */
+.scan-tab-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid #e0dfd8;
+}
+.scan-tab-btn {
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6b6b67;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  font-family: inherit;
+  transition:
+    color 0.15s,
+    border-color 0.15s;
+}
+.scan-tab-btn.active {
+  color: #1a1a18;
+  border-bottom-color: #1a1a18;
+}
+.scan-tab-btn:hover:not(.active) {
+  color: #3a3a38;
+}
+
+.scan-tab-panel {
+  display: none;
+}
+.scan-tab-panel.active {
+  display: block;
+}
+
+.scan-cam-placeholder {
+  width: 100%;
+  max-width: 480px;
+  aspect-ratio: 1/1;
+  margin: 0 auto;
+  border-radius: 14px;
+  background: #f1efe8;
+  border: 2px dashed #d3d1c7;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+}
+
+.scan-cam-controls {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.scan-drop-zone {
+  border: 2px dashed #d3d1c7;
+  border-radius: 14px;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+  background: #fafaf8;
+}
+.scan-drop-zone:hover,
+.scan-drop-zone.drag-over {
+  border-color: #888780;
+  background: #f1efe8;
+}
+
+/* Scan frame corners */
+.scan-frame {
+  width: 60%;
+  height: 60%;
+  position: relative;
+}
+.scan-frame::before,
+.scan-frame::after,
+.scan-frame > span::before,
+.scan-frame > span::after {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border-color: #fff;
+  border-style: solid;
+}
+.scan-frame::before {
+  top: 0;
+  left: 0;
+  border-width: 2.5px 0 0 2.5px;
+  border-radius: 4px 0 0 0;
+}
+.scan-frame::after {
+  top: 0;
+  right: 0;
+  border-width: 2.5px 2.5px 0 0;
+  border-radius: 0 4px 0 0;
+}
+.scan-frame > span::before {
+  bottom: 0;
+  left: 0;
+  border-width: 0 0 2.5px 2.5px;
+  border-radius: 0 0 0 4px;
+}
+.scan-frame > span::after {
+  bottom: 0;
+  right: 0;
+  border-width: 0 2.5px 2.5px 0;
+  border-radius: 0 0 4px 0;
+}
+
+.scan-line {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.9),
+    transparent
+  );
+  animation: scanMove 2s ease-in-out infinite;
+  border-radius: 1px;
+}
+@keyframes scanMove {
+  0% {
+    top: 12%;
+  }
+  50% {
+    top: 82%;
+  }
+  100% {
+    top: 12%;
+  }
+}
+
+/* Status pill */
+.scan-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+.scan-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.scan-idle {
+  background: #f1efe8;
+  color: #5f5e5a;
+}
+.scan-scanning {
+  background: #e1f5ee;
+  color: #0f6e56;
+}
+.scan-scanning .scan-dot {
+  animation: scanPulse 1.2s ease-in-out infinite;
+}
+.scan-found {
+  background: #eaf3de;
+  color: #3b6d11;
+}
+@keyframes scanPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* History item */
+.scan-history-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.6rem 0.9rem;
+  background: #fff;
+  border: 1px solid #e0dfd8;
+  border-radius: 10px;
+  font-size: 13px;
+  gap: 8px;
+}
+.scan-history-item .hi-text {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: #1a1a18;
+}
+.scan-history-item .hi-time {
+  font-size: 11px;
+  color: #888780;
+  flex-shrink: 0;
+}
+.scan-history-item .hi-copy {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  color: #6b6b67;
+  transition: background 0.12s;
+}
+.scan-history-item .hi-copy:hover {
+  background: #f1efe8;
+}

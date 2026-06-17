@@ -273,3 +273,250 @@ function toast(msg) {
   t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
+
+// ── Scanner ──────────────────────────────────────────────────────────────────
+let scanStream = null;
+let scanRAF = null;
+let scanFacingMode = 'environment';
+let scanTorchOn = false;
+let scanUploadImg = null;
+let scanHistory = JSON.parse(localStorage.getItem('qr-scan-history') || '[]');
+
+const scanVideo = () => document.getElementById('scan-video-el');
+const scanCanvas = () => document.getElementById('scan-canvas');
+
+function scanSwitchTab(name, btn) {
+  document
+    .querySelectorAll('.scan-tab-panel')
+    .forEach((p) => p.classList.remove('active'));
+  document
+    .querySelectorAll('.scan-tab-btn')
+    .forEach((b) => b.classList.remove('active'));
+  document.getElementById('scan-tab-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'upload') scanStopCamera();
+}
+
+async function scanStartCamera() {
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: scanFacingMode,
+        width: { ideal: 640 },
+        height: { ideal: 640 },
+      },
+    });
+    const v = scanVideo();
+    v.srcObject = scanStream;
+    await v.play();
+    document.getElementById('scan-cam-placeholder').style.display = 'none';
+    document.getElementById('scan-video-wrap').style.display = 'block';
+    document.getElementById('scan-btn-start').style.display = 'none';
+    document.getElementById('scan-btn-stop').style.display = 'inline-flex';
+    document.getElementById('scan-btn-flip').style.display = 'inline-flex';
+    const track = scanStream.getVideoTracks()[0];
+    if (track.getCapabilities?.()?.torch) {
+      document.getElementById('scan-btn-torch').style.display = 'inline-flex';
+    }
+    scanSetStatus('scanning');
+    scanLoop();
+  } catch (e) {
+    toast('Camera access denied or unavailable');
+  }
+}
+
+function scanStopCamera() {
+  if (scanStream) {
+    scanStream.getTracks().forEach((t) => t.stop());
+    scanStream = null;
+  }
+  if (scanRAF) {
+    cancelAnimationFrame(scanRAF);
+    scanRAF = null;
+  }
+  const v = scanVideo();
+  if (v) v.srcObject = null;
+  document.getElementById('scan-cam-placeholder').style.display = 'flex';
+  document.getElementById('scan-video-wrap').style.display = 'none';
+  document.getElementById('scan-btn-start').style.display = 'inline-flex';
+  document.getElementById('scan-btn-stop').style.display = 'none';
+  document.getElementById('scan-btn-flip').style.display = 'none';
+  document.getElementById('scan-btn-torch').style.display = 'none';
+  scanTorchOn = false;
+  scanSetStatus('idle');
+}
+
+async function scanFlipCamera() {
+  scanFacingMode = scanFacingMode === 'environment' ? 'user' : 'environment';
+  scanStopCamera();
+  await scanStartCamera();
+}
+
+async function scanToggleTorch() {
+  if (!scanStream) return;
+  scanTorchOn = !scanTorchOn;
+  try {
+    await scanStream
+      .getVideoTracks()[0]
+      .applyConstraints({ advanced: [{ torch: scanTorchOn }] });
+    document.getElementById('scan-btn-torch').textContent = scanTorchOn
+      ? '🔦 Torch on'
+      : '🔦 Torch';
+  } catch {
+    toast('Torch not supported on this device');
+  }
+}
+
+function scanLoop() {
+  if (!scanStream) return;
+  const v = scanVideo();
+  const c = scanCanvas();
+  if (v.readyState === v.HAVE_ENOUGH_DATA) {
+    c.width = v.videoWidth;
+    c.height = v.videoHeight;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(v, 0, 0);
+    const imgData = ctx.getImageData(0, 0, c.width, c.height);
+    if (typeof jsQR !== 'undefined') {
+      const code = jsQR(imgData.data, imgData.width, imgData.height, {
+        inversionAttempts: 'dontInvert',
+      });
+      if (code) {
+        scanHandleResult(code.data);
+        return;
+      }
+    }
+  }
+  scanRAF = requestAnimationFrame(scanLoop);
+}
+
+function scanHandleFile(file) {
+  if (!file) return;
+  const url = URL.createObjectURL(file);
+  const img = document.getElementById('scan-upload-preview');
+  img.src = url;
+  img.onload = () => {
+    scanUploadImg = img;
+  };
+  document.getElementById('scan-upload-preview-wrap').style.display = 'block';
+  document.getElementById('scan-btn-decode').style.display = 'inline-flex';
+}
+
+function scanDecodeUpload() {
+  if (!scanUploadImg) return;
+  const c = scanCanvas();
+  c.width = scanUploadImg.naturalWidth;
+  c.height = scanUploadImg.naturalHeight;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  ctx.drawImage(scanUploadImg, 0, 0);
+  const imgData = ctx.getImageData(0, 0, c.width, c.height);
+  if (typeof jsQR !== 'undefined') {
+    const code = jsQR(imgData.data, imgData.width, imgData.height, {
+      inversionAttempts: 'attemptBoth',
+    });
+    if (code) {
+      scanHandleResult(code.data);
+      return;
+    }
+  }
+  toast('No QR code found in this image');
+}
+
+function scanHandleResult(text) {
+  scanStopCamera();
+  scanSetStatus('found');
+  const isUrl = /^https?:\/\//i.test(text);
+  const el = document.getElementById('scan-result-value');
+  el.innerHTML = isUrl
+    ? `<a href="${text}" target="_blank" rel="noopener" style="color:#185fa5; text-decoration:none;">${text}</a>`
+    : text;
+  document.getElementById('scan-btn-open').style.display = isUrl
+    ? 'inline-flex'
+    : 'none';
+  document.getElementById('scan-result-area').style.display = 'block';
+  scanAddToHistory(text);
+  toast('QR code scanned!');
+}
+
+function scanClearResult() {
+  document.getElementById('scan-result-area').style.display = 'none';
+  document.getElementById('scan-result-value').textContent = '';
+  scanSetStatus('idle');
+}
+
+function scanCopyResult() {
+  const text = document.getElementById('scan-result-value').textContent;
+  navigator.clipboard.writeText(text).then(() => toast('Copied!'));
+}
+
+function scanOpenResult() {
+  const a = document.querySelector('#scan-result-value a');
+  if (a) window.open(a.href, '_blank', 'noopener');
+}
+
+function scanSetStatus(state) {
+  const pill = document.getElementById('scan-status-pill');
+  if (!pill) return;
+  pill.className = 'scan-status-pill scan-' + state;
+  const labels = { idle: 'Idle', scanning: 'Scanning…', found: 'Found' };
+  pill.innerHTML = `<span class="scan-dot"></span>${labels[state] || state}`;
+}
+
+function scanAddToHistory(text) {
+  scanHistory.unshift({ text, time: new Date().toISOString() });
+  if (scanHistory.length > 20) scanHistory.pop();
+  localStorage.setItem('qr-scan-history', JSON.stringify(scanHistory));
+  scanRenderHistory();
+}
+
+function scanClearHistory() {
+  scanHistory = [];
+  localStorage.removeItem('qr-scan-history');
+  scanRenderHistory();
+}
+
+function scanRenderHistory() {
+  const area = document.getElementById('scan-history-area');
+  const list = document.getElementById('scan-history-list');
+  if (!area || !list) return;
+  if (!scanHistory.length) {
+    area.style.display = 'none';
+    return;
+  }
+  area.style.display = 'block';
+  list.innerHTML = scanHistory
+    .map((h) => {
+      const t = new Date(h.time);
+      const timeStr = t.toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      const safeText = h.text.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+      const jsText = JSON.stringify(h.text);
+      return `<div class="scan-history-item">
+      <span class="hi-text" title="${safeText}">${safeText}</span>
+      <span class="hi-time">${timeStr}</span>
+      <button class="hi-copy" title="Copy" onclick="navigator.clipboard.writeText(${jsText}).then(()=>toast('Copied!'))">📋</button>
+    </div>`;
+    })
+    .join('');
+}
+
+// Drag-and-drop for scan upload zone
+document.addEventListener('DOMContentLoaded', () => {
+  const dz = document.getElementById('scan-drop-zone');
+  if (dz) {
+    dz.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dz.classList.add('drag-over');
+    });
+    dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+    dz.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dz.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) scanHandleFile(file);
+    });
+  }
+  scanRenderHistory();
+});
